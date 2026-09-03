@@ -30,19 +30,18 @@ python_embeded\python.exe -c "from llama_cpp import Llama; print('ok')"
 > 版本 **0.3.40 必须锁死**，不能装最新版——代码用到的 Qwen3.5/Gemma4 对话处理器对 llama.cpp 前端版本敏感。
 > 判别装的是不是 GPU 版：看 `python_embeded\Lib\site-packages\llama_cpp\lib\` 里有没有 `ggml-cuda.dll`，有 = GPU 版。
 
-**3. 放模型**到 `ComfyUI/models/LLM/`（目录不存在时插件会自动创建）：
+**3. 放模型**到 `ComfyUI/models/LLM/`（目录不存在时插件会自动创建）。模型下载来源（HuggingFace）：
 
-| 角色 | 主模型文件 | mmproj 文件 | 体积 |
+| 角色 | 主模型文件 | mmproj 文件 | 模型仓库 |
 |---|---|---|---|
-| 轻量试跑 | `Qwen3.5-4B-Q4_K_M.gguf` | `qwen3.5mmproj-BF16.gguf` | ≈3.3 GB |
-| 推荐主力 | `Qwen3.5-9B-Q8_0.gguf` | `Qwen3.5-9B-mmproj-BF16.gguf` | ≈9.9 GB |
-| Gemma4 | `gemma-4-12b-it-Q8_0.gguf` | `gemma4-12b-mmproj-BF16.gguf` | ≈12.2 GB |
+| 轻量试跑 | `Qwen3.5-4B-Q4_K_M.gguf` | `mmproj-BF16.gguf` | [unsloth/Qwen3.5-4B-GGUF](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF) |
+| 推荐主力 | `Qwen3.5-9B-Q8_0.gguf` | `mmproj-BF16.gguf` | [unsloth/Qwen3.5-9B-GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) |
+| Gemma4 | `gemma-4-12b-it-Q8_0.gguf` | `mmproj-BF16.gguf` | [unsloth/gemma-4-12b-it-GGUF](https://huggingface.co/unsloth/gemma-4-12b-it-GGUF) |
 
 要点：
-- mmproj 文件名里**必须含 `mmproj` 这四个字母**（加载器按文件名过滤），别改文件名；
+- 这些仓库里的 mmproj 都叫 `mmproj-BF16.gguf`；**同时启用多个模型时，建议把 mmproj 改名加家族前缀**（如 `qwen3.5mmproj-BF16.gguf`、`gemma4-12b-mmproj-BF16.gguf`）以免撞名——加载器靠文件名里**含 `mmproj` 四字符**来识别，改名后仍能正常显示；
 - 主模型与 mmproj 必须**成对**下载使用（9B 主模型不能配 4B 的 mmproj）；
-- 加载器里「模型系列」要与文件匹配：`Qwen3.5-*` 选 `Qwen3.5-VL`，`gemma-4-*` 选 `Gemma4`；
-- 模型文件下载来源如有疑问，见文末联系方式。
+- 加载器里「模型系列」要与文件匹配：`Qwen3.5-*` 选 `Qwen3.5-VL`，`gemma-4-*` 选 `Gemma4`。
 
 ## 节点（只有 3 个）
 
