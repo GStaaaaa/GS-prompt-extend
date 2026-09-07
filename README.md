@@ -61,17 +61,14 @@ python_embeded\python.exe -c "from llama_cpp import Llama; print('ok')"
 
 主模型和 mmproj 放到 `ComfyUI/models/LLM/`。
 
-**2. `@` 引用 H3 已连线的图（重点，V3.1 已修好）**
+**2. `@` 引用参考素材**
 
-在提示词框里输入 **`@`**，会弹出 **H3 节点上已连线（紫色）的参考素材**：
+在提示词框里输入 **`@`**，会弹出参考素材列表。**支持两种来源，哪个有就列哪个：**
 
-- `ref_images.ref_image_N` → `<Picture N>`
-- `ref_videos.ref_video_N` → `<Video N>`
-- `ref_audios.ref_audio_N` → `<Audio N>`
-- `first_frame` → `<Picture 1>`
-- `last_frame` → `<Picture 2>`
+- **H3 节点上已连线的参考槽**（紫色）：`ref_images.ref_image_N` → `<Picture N>`、`ref_videos.ref_video_N` → `<Video N>`、`ref_audios.ref_audio_N` → `<Audio N>`、`first_frame` → `<Picture 1>`、`last_frame` → `<Picture 2>`；
+- **画布上任意「加载图片/视频/音频」节点**（LoadImage / LoadVideo / LoadAudio 等，只要它没被旁路）。
 
-**灰色（没连线）的槽位不会显示**，只列出你真正启用的参考图。
+**灰色/没连线、或被旁路（mode=4）/静音（mode=2）关闭的素材不会显示。** 也就是说：即使参考素材宿主节点被旁路，只要画布上的 LoadImage 节点本身是开启的，`@` 照样能列出它（V3.5 新增）。
 
 选中即插入标记，**这些图会被自动从 `ComfyUI/input` 加载后喂给视觉模型** —— 不需要手动连 IMAGE 线。
 

@@ -232,6 +232,48 @@ function resolveRefSource(srcNode) {
 }
 
 /**
+ * 画布媒体扫描(V3.5)：不再依赖参考宿主节点的连线。
+ * 直接扫画布上「加载图片/视频/音频」的节点，只要它没被旁路/关闭，@ 就能找到它；
+ * 被旁路(mode=4)或静音关闭(mode=2)的加载节点则不会列出。
+ */
+const MEDIA_CLASS_RE = {
+    image: /\.(png|jpe?g|webp|bmp|gif)$/i,
+    video: /\.(mp4|mov|mkv|webm|avi)$/i,
+    audio: /\.(mp3|wav|flac|ogg|m4a)$/i,
+};
+
+function classifyMediaFile(filename) {
+    const f = String(filename || "");
+    for (const kind of ["image", "video", "audio"]) {
+        if (MEDIA_CLASS_RE[kind].test(f)) return kind;
+    }
+    return "";
+}
+
+function scanCanvasMediaLoads() {
+    const g = getGraph();
+    const out = [];
+    const seen = new Set();
+    for (const n of (g && g._nodes) || []) {
+        if (!n) continue;
+        // 被旁路/静音关闭的加载节点 -> 不列出
+        if (isNodeBypassed(n) || n.mode === 2 || n.mode === "2") continue;
+        const typeName = String(n.type || "");
+        if (!/load/i.test(typeName)) continue; // 只看「加载」类节点(LoadImage/LoadVideo/LoadAudio…)
+        const raw = pickFileName(n);
+        if (!raw) continue;
+        const [subfolder, filename] = splitFileRef(raw);
+        const kind = classifyMediaFile(filename);
+        if (!kind) continue; // 不是真正的图片/视频/音频文件，跳过(如 lora/safetensors 等)
+        const key = kind + "|" + filename;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ type: kind, name: filename, subfolder, label: filename || typeName, upstream: typeName });
+    }
+    return out;
+}
+
+/**
  * 收集 H3 节点上「已连线且未被旁路」的参考素材。
  * 先扫工作台下游的 H3 节点；如果没连下游，就扫全画布所有 H3 节点。
  */
@@ -324,6 +366,23 @@ function _collectReferences(workbenchNode) {
                 break;
             }
         }
+    }
+
+    // 4) 兜底(V3.5)：直接扫画布上「加载图片/视频/音频」的节点(未被旁路/关闭)，
+    //    即使参考宿主被旁路，@ 也能列出这些素材。按来源文件去重，标签序号顺延避免撞号。
+    const hostKeys = new Set(out.map((it) => `${it.type}|${it.name}|${it.subfolder}`));
+    const counters = {};
+    for (const it of out) {
+        const n = parseInt(String(it.tag || "").match(/\d+/)?.[0] || "0", 10) || 0;
+        counters[it.type] = Math.max(counters[it.type] || 0, n);
+    }
+    for (const it of scanCanvasMediaLoads()) {
+        const key = `${it.type}|${it.name}|${it.subfolder}`;
+        if (hostKeys.has(key)) continue; // 已通过宿主链路列过，去重
+        hostKeys.add(key);
+        const idx = (counters[it.type] = (counters[it.type] || 0) + 1);
+        const tag = it.type === "image" ? `<Picture ${idx}>` : it.type === "video" ? `<Video ${idx}>` : `<Audio ${idx}>`;
+        out.push({ tag, type: it.type, name: it.name, subfolder: it.subfolder, label: it.label, upstream: it.upstream });
     }
 
     return out;
